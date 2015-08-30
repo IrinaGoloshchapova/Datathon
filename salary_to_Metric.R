@@ -67,15 +67,17 @@ registerDoParallel(cl)
 # Creating metrics
 
 mymetSummary <- function (data, lev = NULL, model = NULL) {
-  est <- data.frame(pred = data$pred, obs = data$obs)
+  
+  pred <- ifelse(data$pred < 0, 0, data$pred)
+  est <- data.frame(pred, obs = data$obs)
   metric_data <- c(NULL)
   for (i in 1:dim(est)[1]) {
-    metric <- abs(min(c(est$obs[i], est$pred[i]))/max(c(est$obs[i], est$pred[i]))-1) 
+    metric <- abs(min(est$obs[i], est$pred[i])/max(est$obs[i], est$pred[i])-1) 
     metric <- metric^2
     metric_data <- rbind(metric_data, metric)
   }
   
-  out <- sum(metric_data)/length(metric_data)
+  out <- sqrt(sum(metric_data)/length(metric_data))
   names(out) <- "myMetric"
   out
 }
@@ -92,16 +94,19 @@ gbm.m <- train(train$salary_to ~ ., method = "gbm", verbose = FALSE,
 
 quality <- min(gbm.m$results$myMetric)
 
-est <- data.frame(pred = predict(gbm.m, valid), obs = valid$salary_to)
+temp <- predict(gbm.m, valid)
+pred <- ifelse(temp < 0, 0, temp)
+
+est <- data.frame(pred, obs = valid$salary_to)
 
 metric_data <- c(NULL)
 
 for (i in 1:dim(est)[1]) {
-  metric <- abs(min(c(est$obs[i], est$pred[i]))/max(c(est$obs[i], est$pred[i]))-1) 
+  metric <- abs(min(est$obs[i], est$pred[i])/max(est$obs[i], est$pred[i])-1) 
   metric <- metric^2
   metric_data <- rbind(metric_data, metric)
 }
-metricItog <- sum(metric_data)/length(metric_data)
+metricItog <- sqrt(sum(metric_data)/length(metric_data))
 
 qualityItog <- data.frame(Metric.train = quality, Metric = metricItog)
 
@@ -112,14 +117,17 @@ rf.m <- train(train$salary_to ~ ., method = "rf", verbose = FALSE,
 
 quality <- min(rf.m$results$myMetric)
 
-est <- data.frame(pred = predict(rf.m, valid), obs = valid$salary_to)
+temp <- predict(rf.m, valid)
+pred <- ifelse(temp < 0, 0, temp)
+
+est <- data.frame(pred, obs = valid$salary_to)
 
 for (i in 1:dim(est)[1]) {
-  metric <- abs(min(c(est$obs[i], est$pred[i]))/max(c(est$obs[i], est$pred[i]))-1) 
+  metric <- abs(min(est$obs[i], est$pred[i])/max(est$obs[i], est$pred[i])-1) 
   metric <- metric^2
   metric_data <- rbind(metric_data, metric)
 }
-metricItog <- sum(metric_data)/length(metric_data)
+metricItog <- sqrt(sum(metric_data)/length(metric_data))
 
 qualityItog.new <- data.frame(Metric.train = quality, Metric = metricItog)
 
@@ -132,14 +140,17 @@ treebag.m <- train(train$salary_to ~ ., method = "treebag",
 
 quality <- min(treebag.m$results$myMetric)
 
-est <- data.frame(pred = predict(treebag.m, valid), obs = valid$salary_to)
+temp <- predict(treebag.m, valid)
+pred <- ifelse(temp < 0, 0, temp)
+
+est <- data.frame(pred, obs = valid$salary_to)
 
 for (i in 1:dim(est)[1]) {
-  metric <- abs(min(c(est$obs[i], est$pred[i]))/max(c(est$obs[i], est$pred[i]))-1) 
+  metric <- abs(min(est$obs[i], est$pred[i])/max(est$obs[i], est$pred[i])-1) 
   metric <- metric^2
   metric_data <- rbind(metric_data, metric)
 }
-metricItog <- sum(metric_data)/length(metric_data)
+metricItog <- sqrt(sum(metric_data)/length(metric_data))
 
 qualityItog.new <- data.frame(Metric.train = quality, Metric = metricItog)
 
@@ -152,14 +163,17 @@ nnet.m <- train(train$salary_to ~ ., method = "nnet",
 
 quality <- min(nnet.m$results$myMetric)
 
-est <- data.frame(pred = predict(nnet.m, valid), obs = valid$salary_to)
+temp <- predict(nnet.m, valid)
+pred <- ifelse(temp < 0, 0, temp)
+
+est <- data.frame(pred, obs = valid$salary_to)
 
 for (i in 1:dim(est)[1]) {
-  metric <- abs(min(c(est$obs[i], est$pred[i]))/max(c(est$obs[i], est$pred[i]))-1) 
+  metric <- abs(min(est$obs[i], est$pred[i])/max(est$obs[i], est$pred[i])-1) 
   metric <- metric^2
   metric_data <- rbind(metric_data, metric)
 }
-metricItog <- sum(metric_data)/length(metric_data)
+metricItog <- sqrt(sum(metric_data)/length(metric_data))
 
 qualityItog.new <- data.frame(Metric.train = quality, Metric = metricItog)
 
@@ -172,34 +186,17 @@ svmRadial.m <- train(train$salary_to ~ ., method = "svmRadial",
 
 quality <- min(svmRadial.m$results$myMetric)
 
-est <- data.frame(pred = predict(svmRadial.m, valid), obs = valid$salary_to)
+temp <- predict(svmRadial.m, valid)
+pred <- ifelse(temp < 0, 0, temp)
+
+est <- data.frame(pred, obs = valid$salary_to)
 
 for (i in 1:dim(est)[1]) {
-  metric <- abs(min(c(est$obs[i], est$pred[i]))/max(c(est$obs[i], est$pred[i]))-1) 
+  metric <- abs(min(est$obs[i], est$pred[i])/max(est$obs[i], est$pred[i])-1) 
   metric <- metric^2
   metric_data <- rbind(metric_data, metric)
 }
-metricItog <- sum(metric_data)/length(metric_data)
-
-qualityItog.new <- data.frame(Metric.train = quality, Metric = metricItog)
-
-qualityItog <- rbind(qualityItog, qualityItog.new)
-
-# (6) rvmRadial
-rvmRadial.m <- train(train$salary_to ~ ., method = "rvmRadial", 
-                     verbose = FALSE, data = train, metric = "myMetric", 
-                     maximize = FALSE, trControl = mControl)
-
-quality <- min(rvmRadial.m$results$myMetric)
-
-est <- data.frame(pred = predict(rvmRadial.m, valid), obs = valid$salary_to)
-
-for (i in 1:dim(est)[1]) {
-  metric <- abs(min(c(est$obs[i], est$pred[i]))/max(c(est$obs[i], est$pred[i]))-1) 
-  metric <- metric^2
-  metric_data <- rbind(metric_data, metric)
-}
-metricItog <- sum(metric_data)/length(metric_data)
+metricItog <- sqrt(sum(metric_data)/length(metric_data))
 
 qualityItog.new <- data.frame(Metric.train = quality, Metric = metricItog)
 
@@ -209,7 +206,7 @@ qualityItog <- rbind(qualityItog, qualityItog.new)
 stopCluster(cl)
 
 # Naming datasets
-methods.m <- c("gbm", "rf", "treebag", "nnet", "svmRadial", "rvmRadial")
+methods.m <- c("gbm", "rf", "treebag", "nnet", "svmRadial")
 
 qualityItog$name <- methods.m
 
